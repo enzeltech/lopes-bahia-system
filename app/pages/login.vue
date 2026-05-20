@@ -5,16 +5,30 @@ import type { LoginCredentials } from '@/types/auth'
 
 definePageMeta({ layout: 'auth' })
 
+const { setUser } = useAuthUser()
+
 const loading = ref(false)
 const serverError = ref<string | null>(null)
 
-async function handleLogin(_credentials: LoginCredentials) {
+async function handleLogin(credentials: LoginCredentials) {
   serverError.value = null
   loading.value = true
 
   try {
-    // TODO: wire backend once API is defined
-    await new Promise(resolve => setTimeout(resolve, 600))
+    // TODO: replace with real auth API once backend is defined
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    setUser({
+      nome: 'Super Admin',
+      cpf: credentials.cpf,
+      cargo: 'super_admin',
+      role: 'super_admin',
+    })
+
+    await navigateTo('/dashboard', { replace: true })
+  } catch (err) {
+    serverError.value = 'Erro inesperado. Tente novamente.'
+    console.error(err)
   } finally {
     loading.value = false
   }
