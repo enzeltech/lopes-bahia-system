@@ -9,9 +9,6 @@ definePageMeta({
 const route = useRoute()
 
 const moduleTitles: Record<string, string> = {
-  'empreendimentos': 'Empreendimentos',
-  'oferta-ativa': 'Oferta Ativa',
-  'capacitacao': 'Capacitação',
   'configuracao': 'Configurações',
 }
 

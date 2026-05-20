@@ -21,6 +21,12 @@ export default defineNuxtConfig({
     componentDir: './app/components/ui',
   },
 
+  runtimeConfig: {
+    // Server-only secrets — populated from NUXT_* env vars
+    c2sToken: '',
+    c2sBaseUrl: '',
+  },
+
   app: {
     head: {
       htmlAttrs: { lang: 'pt-BR' },
