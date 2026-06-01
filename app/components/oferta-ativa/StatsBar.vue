@@ -4,7 +4,7 @@ import type { EstatisticasSetor } from '@/types/oferta-ativa'
 
 defineProps<{
   stats: EstatisticasSetor
-  total: number
+  total?: number
 }>()
 </script>
 
@@ -13,7 +13,7 @@ defineProps<{
     <Card class="flex flex-col gap-1 p-4">
       <span class="text-xs text-muted-foreground">Trabalhados</span>
       <span class="text-2xl font-bold tabular-nums text-foreground">
-        {{ stats.trabalhados }}<span class="text-sm font-normal text-muted-foreground"> / {{ total }}</span>
+        {{ stats.trabalhados }}<span v-if="total !== undefined" class="text-sm font-normal text-muted-foreground"> / {{ total }}</span>
       </span>
     </Card>
     <Card class="flex flex-col gap-1 p-4">

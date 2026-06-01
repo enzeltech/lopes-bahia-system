@@ -1,13 +1,9 @@
-import { leadsMock, setoresMock } from '@/lib/mocks/oferta-ativa'
 import type {
   EstatisticasSetor,
-  FeedbackRegistro,
   FeedbackStatus,
   Lead,
   Setor,
 } from '@/types/oferta-ativa'
-
-const STORAGE_KEY = 'oferta-ativa:feedbacks'
 
 function emptyStats(): EstatisticasSetor {
   return {
@@ -19,101 +15,119 @@ function emptyStats(): EstatisticasSetor {
   }
 }
 
-function loadFeedbacks(): FeedbackRegistro[] {
-  if (!import.meta.client)
-    return []
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw)
-      return []
-    const arr = JSON.parse(raw) as FeedbackRegistro[]
-    return Array.isArray(arr) ? arr : []
-  } catch {
-    return []
-  }
-}
-
-function persistFeedbacks(feedbacks: FeedbackRegistro[]) {
-  if (!import.meta.client)
-    return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(feedbacks))
-}
-
+/**
+ * Oferta Ativa (fluxo de fila):
+ * - setores  = setores locais visíveis ao usuário (GET /api/oferta-ativa/setores)
+ * - próximo  = lead da fila geral da C2S casado por tag e travado p/ o corretor
+ * - finalizar= grava o resultado no banco e reflete na C2S (mark_as_interacted)
+ */
 export function useOfertaAtiva() {
-  const setores: Setor[] = setoresMock
-  const feedbacks = useState<FeedbackRegistro[]>('oa-feedbacks', () => [])
+  const setores = useState<Setor[]>('oa-setores', () => [])
+  const isGerente = useState('oa-is-gerente', () => false)
 
-  function hydrate() {
-    feedbacks.value = loadFeedbacks()
-  }
+  const setorAtivoId = useState<string | null>('oa-setor-ativo', () => null)
+  const currentLead = useState<Lead | null>('oa-lead', () => null)
+  const atendimentoId = useState<string | null>('oa-atendimento', () => null)
+  const stats = useState<EstatisticasSetor>('oa-stats', () => emptyStats())
+  const semLeads = useState('oa-sem-leads', () => false)
 
-  function trabalhados(setorId: string): Set<string> {
-    return new Set(
-      feedbacks.value
-        .filter((f) => {
-          const lead = leadsMock.find(l => l.id === f.leadId)
-          return lead?.setorId === setorId
-        })
-        .map(f => f.leadId),
-    )
-  }
+  const loadingSetores = useState('oa-loading-setores', () => false)
+  const loadingLead = useState('oa-loading-lead', () => false)
+  const enviando = useState('oa-enviando', () => false)
+  const erro = useState<string | null>('oa-erro', () => null)
 
-  function proximoLead(setorId: string): Lead | null {
-    const worked = trabalhados(setorId)
-    return leadsMock.find(l => l.setorId === setorId && !worked.has(l.id)) ?? null
-  }
-
-  function registrarFeedback(leadId: string, status: FeedbackStatus, observacao: string) {
-    const novo: FeedbackRegistro = {
-      leadId,
-      status,
-      observacao,
-      registradoEm: new Date().toISOString(),
+  async function loadSetores() {
+    loadingSetores.value = true
+    erro.value = null
+    try {
+      const res = await $fetch<{ setores: Setor[], isGerente: boolean }>(
+        '/api/oferta-ativa/setores',
+      )
+      setores.value = res.setores
+      isGerente.value = res.isGerente
+    } catch (e: any) {
+      erro.value = e?.statusMessage ?? 'Não foi possível carregar os setores.'
+    } finally {
+      loadingSetores.value = false
     }
-    feedbacks.value = [...feedbacks.value, novo]
-    persistFeedbacks(feedbacks.value)
   }
 
-  function estatisticas(setorId: string): EstatisticasSetor {
-    const setorFeedbacks = feedbacks.value.filter((f) => {
-      const lead = leadsMock.find(l => l.id === f.leadId)
-      return lead?.setorId === setorId
+  async function refreshStats() {
+    if (!setorAtivoId.value)
+      return
+    const res = await $fetch<{ stats: EstatisticasSetor }>('/api/oferta-ativa/stats', {
+      query: { setorId: setorAtivoId.value },
     })
+    stats.value = res.stats
+  }
 
-    const stats = emptyStats()
-    stats.trabalhados = setorFeedbacks.length
-    for (const f of setorFeedbacks) {
-      if (f.status === 'interessado')
-        stats.interessados++
-      else if (f.status === 'nao-interessado')
-        stats.naoInteressados++
-      else if (f.status === 'recontatar')
-        stats.recontatar++
-      else if (f.status === 'numero-invalido')
-        stats.numerosInvalidos++
+  async function carregarProximo() {
+    if (!setorAtivoId.value)
+      return
+    loadingLead.value = true
+    erro.value = null
+    try {
+      const res = await $fetch<{ atendimentoId: string | null, lead: Lead | null }>(
+        '/api/oferta-ativa/fila/proximo',
+        { method: 'POST', body: { setorId: setorAtivoId.value } },
+      )
+      currentLead.value = res.lead
+      atendimentoId.value = res.atendimentoId
+      semLeads.value = !res.lead
+      await refreshStats()
+    } catch (e: any) {
+      erro.value = e?.statusMessage ?? 'Não foi possível carregar o próximo lead.'
+      currentLead.value = null
+      atendimentoId.value = null
+    } finally {
+      loadingLead.value = false
     }
-    return stats
   }
 
-  function totalDoSetor(setorId: string): number {
-    return leadsMock.filter(l => l.setorId === setorId).length
+  async function selectSetor(setorId: string) {
+    setorAtivoId.value = setorId
+    currentLead.value = null
+    atendimentoId.value = null
+    semLeads.value = false
+    await carregarProximo()
   }
 
-  function resetSetor(setorId: string) {
-    feedbacks.value = feedbacks.value.filter((f) => {
-      const lead = leadsMock.find(l => l.id === f.leadId)
-      return lead?.setorId !== setorId
-    })
-    persistFeedbacks(feedbacks.value)
+  async function registrarFeedback(status: FeedbackStatus, observacao: string) {
+    if (!atendimentoId.value)
+      return
+    enviando.value = true
+    erro.value = null
+    try {
+      await $fetch('/api/oferta-ativa/fila/finalizar', {
+        method: 'POST',
+        body: { atendimentoId: atendimentoId.value, status, observacao },
+      })
+      await carregarProximo()
+    } catch (e: any) {
+      erro.value = e?.statusMessage ?? 'Não foi possível registrar o feedback.'
+    } finally {
+      enviando.value = false
+    }
   }
+
+  const setorAtivo = computed(
+    () => setores.value.find(s => s.id === setorAtivoId.value) ?? null,
+  )
 
   return {
     setores,
-    hydrate,
-    proximoLead,
+    isGerente,
+    setorAtivo,
+    setorAtivoId,
+    currentLead,
+    stats,
+    semLeads,
+    loadingSetores,
+    loadingLead,
+    enviando,
+    erro,
+    loadSetores,
+    selectSetor,
     registrarFeedback,
-    estatisticas,
-    totalDoSetor,
-    resetSetor,
   }
 }

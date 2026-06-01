@@ -1,11 +1,5 @@
 export default defineNuxtRouteMiddleware(() => {
-  if (!import.meta.client)
-    return
-
-  const { user, loadFromStorage } = useAuthUser()
-  if (!user.value)
-    loadFromStorage()
-
-  if (!user.value)
+  const { loggedIn } = useUserSession()
+  if (!loggedIn.value)
     return navigateTo('/login', { replace: true })
 })

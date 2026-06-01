@@ -2,6 +2,18 @@ export interface Setor {
   id: string
   nome: string
   descricao?: string
+  cor?: string
+  ativo?: boolean
+  tagsC2s?: string[]
+  empreendimentos?: string[]
+  corretores?: string[]
+}
+
+export interface Corretor {
+  id: string
+  nome: string
+  cpf: string
+  cargo: string
 }
 
 export interface Lead {

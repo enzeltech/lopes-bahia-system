@@ -31,11 +31,7 @@ function pick(setor: Setor) {
 
 <template>
   <Dialog v-model:open="openModel">
-    <DialogContent
-      class="sm:max-w-lg [&>button.absolute]:hidden"
-      @pointer-down-outside.prevent
-      @escape-key-down.prevent
-    >
+    <DialogContent class="sm:max-w-lg">
       <DialogHeader>
         <DialogTitle class="text-xl">
           Escolher setor
@@ -45,7 +41,10 @@ function pick(setor: Setor) {
         </DialogDescription>
       </DialogHeader>
 
-      <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div
+        v-if="setores.length"
+        class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2"
+      >
         <button
           v-for="setor in setores"
           :key="setor.id"
@@ -54,7 +53,8 @@ function pick(setor: Setor) {
           @click="pick(setor)"
         >
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand transition-colors group-hover:bg-brand/15"
+            class="grid size-10 shrink-0 place-items-center rounded-full text-white transition-transform group-hover:scale-105"
+            :style="{ backgroundColor: setor.cor || '#eb194b' }"
           >
             <Briefcase class="size-5" />
           </span>
@@ -67,6 +67,22 @@ function pick(setor: Setor) {
             </span>
           </span>
         </button>
+      </div>
+
+      <div
+        v-else
+        class="mt-2 flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-6 py-10 text-center"
+      >
+        <span class="grid size-12 place-items-center rounded-full bg-muted text-muted-foreground">
+          <Briefcase class="size-6" />
+        </span>
+        <p class="text-sm font-medium text-foreground">
+          Nenhum setor disponível
+        </p>
+        <p class="max-w-xs text-xs text-muted-foreground">
+          Você ainda não está atribuído a um setor. Um gestor pode criar e atribuir setores em
+          <strong>Configurações → Setores da Oferta Ativa</strong>.
+        </p>
       </div>
     </DialogContent>
   </Dialog>

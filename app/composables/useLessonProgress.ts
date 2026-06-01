@@ -1,37 +1,19 @@
-const NOTES_PREFIX = 'capacitacao:note:'
-const COMPLETED_KEY = 'capacitacao:completed'
-
-function readCompletedSet(): Set<string> {
-  if (!import.meta.client)
-    return new Set()
-  try {
-    const raw = window.localStorage.getItem(COMPLETED_KEY)
-    if (!raw)
-      return new Set()
-    const arr = JSON.parse(raw) as string[]
-    return new Set(Array.isArray(arr) ? arr : [])
-  } catch {
-    return new Set()
-  }
-}
-
-function writeCompletedSet(set: Set<string>) {
-  if (!import.meta.client)
-    return
-  window.localStorage.setItem(COMPLETED_KEY, JSON.stringify([...set]))
-}
-
+/**
+ * Progresso de uma aula (nota + conclusão) ligado ao banco via
+ * useCapacitacaoProgresso. Mantém a mesma interface usada pela página do vídeo.
+ */
 export function useLessonProgress(videoId: MaybeRefOrGetter<string>) {
+  const { load, isCompleted, markCompleted: markDone, getNote, saveNote } = useCapacitacaoProgresso()
+
   const note = ref('')
   const completed = ref(false)
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 
-  function load() {
-    if (!import.meta.client)
-      return
+  async function refresh() {
+    await load()
     const id = toValue(videoId)
-    note.value = window.localStorage.getItem(`${NOTES_PREFIX}${id}`) ?? ''
-    completed.value = readCompletedSet().has(id)
+    note.value = getNote(id)
+    completed.value = isCompleted(id)
   }
 
   function setNote(value: string) {
@@ -39,38 +21,17 @@ export function useLessonProgress(videoId: MaybeRefOrGetter<string>) {
     if (saveTimer)
       clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
-      if (!import.meta.client)
-        return
-      const id = toValue(videoId)
-      if (value)
-        window.localStorage.setItem(`${NOTES_PREFIX}${id}`, value)
-      else
-        window.localStorage.removeItem(`${NOTES_PREFIX}${id}`)
+      saveNote(toValue(videoId), value)
     }, 400)
   }
 
-  function markCompleted() {
-    if (!import.meta.client)
-      return
-    const id = toValue(videoId)
-    const set = readCompletedSet()
-    set.add(id)
-    writeCompletedSet(set)
+  async function markCompleted() {
+    await markDone(toValue(videoId))
     completed.value = true
   }
 
-  function isCompleted(id: string): boolean {
-    return readCompletedSet().has(id)
-  }
+  onMounted(refresh)
+  watch(() => toValue(videoId), refresh)
 
-  onMounted(load)
-  watch(() => toValue(videoId), load)
-
-  return {
-    note,
-    completed,
-    setNote,
-    markCompleted,
-    isCompleted,
-  }
+  return { note, completed, setNote, markCompleted, isCompleted }
 }

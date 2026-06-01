@@ -51,7 +51,7 @@ const formattedTime = computed(() =>
 )
 
 async function onLogout() {
-  logout()
+  await logout()
   await navigateTo('/login', { replace: true })
 }
 </script>

@@ -2,6 +2,7 @@
 import type { Component } from 'vue'
 import {
   ArrowRight,
+  Briefcase,
   Building2,
   PlayCircle,
   Users,
@@ -13,9 +14,9 @@ definePageMeta({
   middleware: ['auth', 'super-admin'],
 })
 
-const { usuarios, hydrate } = useUsuariosConfig()
+const { usuarios, load } = useUsuariosConfig()
 
-onMounted(() => hydrate())
+onMounted(() => load())
 
 interface ConfigCard {
   title: string
@@ -32,6 +33,12 @@ const cards: ConfigCard[] = [
     to: '/dashboard/configuracao/usuarios',
     icon: Users,
     counter: computed(() => `${usuarios.value.length} cadastrados`),
+  },
+  {
+    title: 'Setores da Oferta Ativa',
+    description: 'Definir tags da C2S e corretores de cada setor.',
+    to: '/dashboard/configuracao/setores',
+    icon: Briefcase,
   },
   {
     title: 'Empreendimentos',

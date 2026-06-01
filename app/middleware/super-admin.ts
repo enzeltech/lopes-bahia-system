@@ -1,14 +1,9 @@
 export default defineNuxtRouteMiddleware(() => {
-  if (!import.meta.client)
-    return
-
-  const { user, isSuperAdmin, loadFromStorage } = useAuthUser()
-  if (!user.value)
-    loadFromStorage()
-
-  if (!user.value)
+  const { user, loggedIn } = useUserSession()
+  if (!loggedIn.value)
     return navigateTo('/login', { replace: true })
 
-  if (!isSuperAdmin.value)
+  const isSuper = user.value?.cpf === '00000000000' || user.value?.cargo === 'super_admin'
+  if (!isSuper)
     return navigateTo('/dashboard', { replace: true })
 })

@@ -31,11 +31,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
-  (e: 'submit', payload: UsuarioFormPayload, originalCpf: string | null): void
+  (e: 'submit', payload: UsuarioFormPayload, originalId: string | null): void
 }>()
 
 const isEditing = computed(() => !!props.usuario)
-const originalCpf = ref<string | null>(null)
+const originalId = ref<string | null>(null)
 const submitError = ref<string | null>(null)
 
 const openModel = computed({
@@ -61,7 +61,7 @@ watch(
     if (!open)
       return
     if (props.usuario) {
-      originalCpf.value = props.usuario.cpf
+      originalId.value = props.usuario.id
       resetForm({
         values: {
           nome: props.usuario.nome,
@@ -72,7 +72,7 @@ watch(
         },
       })
     } else {
-      originalCpf.value = null
+      originalId.value = null
       resetForm({ values: { nome: '', cpf: '', cargo: 'operacional', email: '', senha: '' } })
     }
   },
@@ -93,7 +93,7 @@ const onSubmit = handleSubmit((values) => {
     cargo: values.cargo,
     email: values.email ? values.email.trim() : undefined,
     senha: values.senha || undefined,
-  }, originalCpf.value)
+  }, originalId.value)
 })
 
 function setError(message: string) {

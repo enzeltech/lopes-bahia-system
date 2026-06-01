@@ -8,6 +8,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { FeedbackStatus } from '@/types/oferta-ativa'
 
+const props = withDefaults(defineProps<{ disabled?: boolean }>(), {
+  disabled: false,
+})
+
 const emit = defineEmits<{
   (e: 'submit', payload: { status: FeedbackStatus, observacao: string }): void
 }>()
@@ -29,7 +33,7 @@ const options: StatusOption[] = [
 const status = ref<FeedbackStatus | null>(null)
 const observacao = ref('')
 
-const submitDisabled = computed(() => !status.value)
+const submitDisabled = computed(() => !status.value || props.disabled)
 
 function onSubmit() {
   if (!status.value)

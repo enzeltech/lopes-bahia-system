@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { Building2, SearchX } from 'lucide-vue-next'
+import { Building2, Download, FileText, SearchX } from 'lucide-vue-next'
 import ResultsTable from '@/components/empreendimentos/ResultsTable.vue'
 import SearchForm from '@/components/empreendimentos/SearchForm.vue'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { exportarCsv, exportarPdf } from '@/lib/export-empreendimentos'
 import type { Empreendimento, EmpreendimentoFiltros } from '@/types/empreendimento'
 
 definePageMeta({
@@ -10,16 +12,17 @@ definePageMeta({
   middleware: 'auth',
 })
 
-const { options, search } = useEmpreendimentos()
+const { options, search, load } = useEmpreendimentos()
 
 const loading = ref(false)
 const hasSearched = ref(false)
 const resultados = ref<Empreendimento[]>([])
 
+onMounted(() => load())
+
 async function handleSearch(filtros: EmpreendimentoFiltros) {
   loading.value = true
   hasSearched.value = true
-  await new Promise(resolve => setTimeout(resolve, 250))
   resultados.value = search(filtros)
   loading.value = false
 }
@@ -72,13 +75,25 @@ function handleReset() {
     </Card>
 
     <Card v-else-if="resultados.length > 0" class="p-6">
-      <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-foreground">
-          Resultado da consulta
-        </h2>
-        <span class="text-sm text-muted-foreground">
-          {{ resultados.length }} {{ resultados.length === 1 ? 'empreendimento' : 'empreendimentos' }}
-        </span>
+      <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-semibold text-foreground">
+            Resultado da consulta
+          </h2>
+          <span class="text-sm text-muted-foreground">
+            {{ resultados.length }} {{ resultados.length === 1 ? 'empreendimento' : 'empreendimentos' }}
+          </span>
+        </div>
+        <div class="flex gap-2">
+          <Button variant="outline" size="sm" @click="exportarCsv(resultados)">
+            <Download class="size-4" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" @click="exportarPdf(resultados)">
+            <FileText class="size-4" />
+            PDF
+          </Button>
+        </div>
       </div>
       <ResultsTable :empreendimentos="resultados" />
     </Card>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, Plus, RotateCcw, Trash2, UserRound } from 'lucide-vue-next'
+import { Pencil, Plus, Trash2, UserRound } from 'lucide-vue-next'
 import ConfirmDeleteDialog from '@/components/configuracao/ConfirmDeleteDialog.vue'
 import UsuarioFormModal from '@/components/configuracao/UsuarioFormModal.vue'
 import { Badge } from '@/components/ui/badge'
@@ -22,7 +22,7 @@ definePageMeta({
   middleware: ['auth', 'super-admin'],
 })
 
-const { usuarios, hydrate, existsByCpf, add, update, remove, resetToMock } = useUsuariosConfig()
+const { usuarios, loading, erro, load, existsByCpf, add, update, remove } = useUsuariosConfig()
 
 const formOpen = ref(false)
 const editingUser = ref<UsuarioConfig | null>(null)
@@ -31,7 +31,7 @@ const formRef = ref<InstanceType<typeof UsuarioFormModal> | null>(null)
 const deleteOpen = ref(false)
 const deletingUser = ref<UsuarioConfig | null>(null)
 
-onMounted(() => hydrate())
+onMounted(() => load())
 
 const cargoBadgeClass: Record<Cargo, string> = {
   super_admin: 'bg-brand/10 text-brand',
@@ -56,34 +56,27 @@ function openDelete(user: UsuarioConfig) {
   deleteOpen.value = true
 }
 
-function handleSubmit(payload: UsuarioFormPayload, originalCpf: string | null) {
-  if (originalCpf) {
-    if (payload.cpf !== originalCpf && existsByCpf(payload.cpf)) {
-      formRef.value?.setError('Já existe um usuário com esse CPF.')
-      return
-    }
-    update(originalCpf, payload)
-  } else {
-    if (existsByCpf(payload.cpf)) {
-      formRef.value?.setError('Já existe um usuário com esse CPF.')
-      return
-    }
-    add(payload)
+async function handleSubmit(payload: UsuarioFormPayload, originalId: string | null) {
+  if (existsByCpf(payload.cpf, originalId ?? undefined)) {
+    formRef.value?.setError('Já existe um usuário com esse CPF.')
+    return
   }
-  formOpen.value = false
+  try {
+    if (originalId)
+      await update(originalId, payload)
+    else
+      await add(payload)
+    formOpen.value = false
+  } catch (e: any) {
+    formRef.value?.setError(e?.statusMessage ?? 'Não foi possível salvar o usuário.')
+  }
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (deletingUser.value)
-    remove(deletingUser.value.cpf)
+    await remove(deletingUser.value.id)
   deleteOpen.value = false
   deletingUser.value = null
-}
-
-function onReset() {
-  if (typeof window !== 'undefined' && !window.confirm('Restaurar a lista de usuários para o mock inicial?'))
-    return
-  resetToMock()
 }
 </script>
 
@@ -106,10 +99,6 @@ function onReset() {
       </div>
 
       <div class="flex gap-2">
-        <Button variant="outline" size="sm" @click="onReset">
-          <RotateCcw class="size-4" />
-          Restaurar mock
-        </Button>
         <Button variant="default" size="sm" @click="openCreate">
           <Plus class="size-4" />
           Novo usuário
@@ -117,7 +106,18 @@ function onReset() {
       </div>
     </header>
 
-    <Card v-if="usuarios.length === 0" class="flex flex-col items-center gap-3 px-6 py-16 text-center">
+    <Card
+      v-if="erro"
+      class="border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+    >
+      {{ erro }}
+    </Card>
+
+    <Card v-if="loading" class="px-6 py-16 text-center text-sm text-muted-foreground">
+      Carregando usuários…
+    </Card>
+
+    <Card v-else-if="usuarios.length === 0" class="flex flex-col items-center gap-3 px-6 py-16 text-center">
       <span class="grid size-14 place-items-center rounded-full bg-muted text-muted-foreground">
         <UserRound class="size-7" />
       </span>
@@ -133,7 +133,7 @@ function onReset() {
       </Button>
     </Card>
 
-    <div v-else class="overflow-x-auto rounded-lg border border-border bg-card">
+    <div v-else-if="usuarios.length" class="overflow-x-auto rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow class="bg-muted/50">
@@ -156,7 +156,7 @@ function onReset() {
         </TableHeader>
 
         <TableBody>
-          <TableRow v-for="u in usuarios" :key="u.cpf" class="hover:bg-muted/30">
+          <TableRow v-for="u in usuarios" :key="u.id" class="hover:bg-muted/30">
             <TableCell class="font-medium text-foreground">
               {{ u.nome }}
             </TableCell>

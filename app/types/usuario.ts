@@ -17,10 +17,12 @@ export const CARGO_LABEL: Record<Cargo, string> = {
 }
 
 export interface UsuarioConfig {
+  id: string
   cpf: string
   nome: string
   cargo: Cargo
-  email?: string
+  email?: string | null
+  ativo?: boolean
 }
 
 export interface UsuarioFormPayload {

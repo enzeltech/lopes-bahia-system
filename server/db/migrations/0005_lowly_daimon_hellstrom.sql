@@ -1,0 +1,1 @@
+ALTER TABLE "oferta_ativa_atendimentos" ADD CONSTRAINT "oferta_ativa_atendimentos_c2sLeadId_unique" UNIQUE("c2s_lead_id");

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lopes-bahia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lopes
+      POSTGRES_PASSWORD: lopes
+      POSTGRES_DB: lopes_bahia
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lopes -d lopes_bahia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

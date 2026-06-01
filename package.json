@@ -7,18 +7,29 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx server/db/seed.ts"
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vee-validate/zod": "^4.15.1",
     "@vueuse/core": "^14.3.0",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.2.1",
+    "drizzle-orm": "^0.45.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-vue-next": "^1.0.0",
     "nuxt": "^4.4.6",
+    "nuxt-auth-utils": "^0.5.29",
+    "postgres": "^3.4.9",
     "reka-ui": "^2.9.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
@@ -29,7 +40,10 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "drizzle-kit": "^0.31.10",
     "shadcn-nuxt": "^2.7.3",
+    "tsx": "^4.22.3",
     "typescript": "~5.6.3",
     "vue-tsc": "^3.3.1"
   }

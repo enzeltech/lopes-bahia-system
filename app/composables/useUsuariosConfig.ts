@@ -1,80 +1,47 @@
-import { usuariosMock } from '@/lib/mocks/usuarios'
 import type { UsuarioConfig, UsuarioFormPayload } from '@/types/usuario'
 
-const STORAGE_KEY = 'config:usuarios'
-
-function loadFromStorage(): UsuarioConfig[] | null {
-  if (!import.meta.client)
-    return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw)
-      return null
-    const parsed = JSON.parse(raw) as UsuarioConfig[]
-    return Array.isArray(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-function persist(list: UsuarioConfig[]) {
-  if (!import.meta.client)
-    return
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list))
-}
-
+/** Gestão de usuários conectada ao banco (somente super admin). */
 export function useUsuariosConfig() {
-  const usuarios = useState<UsuarioConfig[]>('config-usuarios', () => [...usuariosMock])
+  const usuarios = useState<UsuarioConfig[]>('config-usuarios', () => [])
+  const loading = useState('config-usuarios-loading', () => false)
+  const erro = useState<string | null>('config-usuarios-erro', () => null)
 
-  function hydrate() {
-    const stored = loadFromStorage()
-    if (stored)
-      usuarios.value = stored
-    else
-      persist(usuarios.value)
-  }
-
-  function existsByCpf(cpf: string): boolean {
-    return usuarios.value.some(u => u.cpf === cpf)
-  }
-
-  function add(payload: UsuarioFormPayload) {
-    const novo: UsuarioConfig = {
-      cpf: payload.cpf,
-      nome: payload.nome,
-      cargo: payload.cargo,
-      email: payload.email,
+  async function load() {
+    loading.value = true
+    erro.value = null
+    try {
+      usuarios.value = await $fetch<UsuarioConfig[]>('/api/usuarios')
+    } catch (e: any) {
+      erro.value = e?.statusMessage ?? 'Não foi possível carregar os usuários.'
+    } finally {
+      loading.value = false
     }
+  }
+
+  function existsByCpf(cpf: string, exceptId?: string): boolean {
+    return usuarios.value.some(u => u.cpf === cpf && u.id !== exceptId)
+  }
+
+  async function add(payload: UsuarioFormPayload) {
+    const novo = await $fetch<UsuarioConfig>('/api/usuarios', {
+      method: 'POST',
+      body: payload,
+    })
     usuarios.value = [novo, ...usuarios.value]
-    persist(usuarios.value)
   }
 
-  function update(originalCpf: string, payload: UsuarioFormPayload) {
-    usuarios.value = usuarios.value.map(u =>
-      u.cpf === originalCpf
-        ? { cpf: payload.cpf, nome: payload.nome, cargo: payload.cargo, email: payload.email }
-        : u,
-    )
-    persist(usuarios.value)
+  async function update(id: string, payload: UsuarioFormPayload) {
+    const atualizado = await $fetch<UsuarioConfig>(`/api/usuarios/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    })
+    usuarios.value = usuarios.value.map(u => (u.id === id ? atualizado : u))
   }
 
-  function remove(cpf: string) {
-    usuarios.value = usuarios.value.filter(u => u.cpf !== cpf)
-    persist(usuarios.value)
+  async function remove(id: string) {
+    await $fetch(`/api/usuarios/${id}`, { method: 'DELETE' })
+    usuarios.value = usuarios.value.filter(u => u.id !== id)
   }
 
-  function resetToMock() {
-    usuarios.value = [...usuariosMock]
-    persist(usuarios.value)
-  }
-
-  return {
-    usuarios,
-    hydrate,
-    existsByCpf,
-    add,
-    update,
-    remove,
-    resetToMock,
-  }
+  return { usuarios, loading, erro, load, existsByCpf, add, update, remove }
 }
