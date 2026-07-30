@@ -6,6 +6,13 @@ export function useAuthUser() {
     || user.value?.cargo === 'super_admin',
   )
 
+  /** Cargos de gestão — espelha `isGerente` do servidor. */
+  const isGerente = computed(() =>
+    isSuperAdmin.value
+    || user.value?.cargo === 'diretor'
+    || user.value?.cargo === 'gerente',
+  )
+
   async function logout() {
     await $fetch('/api/auth/logout', { method: 'POST' })
     await clear()
@@ -15,6 +22,7 @@ export function useAuthUser() {
     user,
     loggedIn,
     isSuperAdmin,
+    isGerente,
     refreshSession,
     logout,
   }

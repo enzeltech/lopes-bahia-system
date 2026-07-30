@@ -7,6 +7,7 @@ const bodySchema = z.object({
   nome: z.string().min(1, 'Informe o nome do setor.').max(120),
   descricao: z.string().max(2000).optional(),
   cor: z.string().max(16).optional(),
+  origemLeads: z.enum(['c2s', 'mailing', 'ambos']).optional(),
   tagsC2s: z.array(z.string()).optional(),
   empreendimentos: z.array(z.string()).optional(),
   corretores: z.array(z.string().uuid()).optional(),
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { nome, descricao, cor, tagsC2s, empreendimentos, corretores } = parsed.data
+  const { nome, descricao, cor, origemLeads, tagsC2s, empreendimentos, corretores } = parsed.data
   const db = useDb()
 
   const [setor] = await db
@@ -34,6 +35,7 @@ export default defineEventHandler(async (event) => {
       nome,
       descricao: descricao ?? '',
       cor: cor || '#eb194b',
+      origemLeads: origemLeads ?? 'c2s',
       tagsC2s: tagsC2s ?? [],
       empreendimentos: empreendimentos ?? [],
     })

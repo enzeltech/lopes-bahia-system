@@ -9,6 +9,7 @@ const bodySchema = z.object({
   descricao: z.string().max(2000).optional(),
   cor: z.string().max(16).optional(),
   ativo: z.boolean().optional(),
+  origemLeads: z.enum(['c2s', 'mailing', 'ambos']).optional(),
   tagsC2s: z.array(z.string()).optional(),
   empreendimentos: z.array(z.string()).optional(),
   corretores: z.array(z.string().uuid()).optional(),

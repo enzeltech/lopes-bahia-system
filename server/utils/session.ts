@@ -8,10 +8,6 @@ declare module '#auth-utils' {
     cargo: Cargo
     email?: string
   }
-
-  interface UserSession {
-    user: User
-  }
 }
 
 export {}

@@ -1,9 +1,10 @@
-import type { Corretor, Setor } from '@/types/oferta-ativa'
+import type { Corretor, OrigemLeads, Setor } from '@/types/oferta-ativa'
 
 export interface SetorFormPayload {
   nome: string
   descricao: string
   cor: string
+  origemLeads: OrigemLeads
   tagsC2s: string[]
   empreendimentos: string[]
   corretores: string[]

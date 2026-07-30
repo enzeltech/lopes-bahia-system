@@ -14,7 +14,13 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type { SetorFormPayload } from '@/composables/useSetoresAdmin'
-import type { Setor } from '@/types/oferta-ativa'
+import type { OrigemLeads, Setor } from '@/types/oferta-ativa'
+
+const ROTULO_ORIGEM: Record<OrigemLeads, string> = {
+  c2s: 'C2S',
+  mailing: 'Mailing',
+  ambos: 'C2S + Mailing',
+}
 
 definePageMeta({
   layout: 'dashboard-section',
@@ -126,6 +132,9 @@ async function confirmDelete() {
               Setor
             </TableHead>
             <TableHead class="font-semibold text-foreground">
+              Origem
+            </TableHead>
+            <TableHead class="font-semibold text-foreground">
               Tags C2S
             </TableHead>
             <TableHead class="font-semibold text-foreground">
@@ -153,12 +162,22 @@ async function confirmDelete() {
               </div>
             </TableCell>
             <TableCell>
+              <Badge variant="outline" class="text-xs">
+                {{ ROTULO_ORIGEM[s.origemLeads ?? 'c2s'] }}
+              </Badge>
+            </TableCell>
+            <TableCell>
               <div class="flex flex-wrap gap-1">
-                <Badge v-for="t in s.tagsC2s ?? []" :key="t" variant="secondary" class="text-xs">
-                  {{ t }}
-                </Badge>
-                <span v-if="!(s.tagsC2s ?? []).length" class="text-xs text-muted-foreground">
-                  Todos os leads
+                <template v-if="(s.origemLeads ?? 'c2s') !== 'mailing'">
+                  <Badge v-for="t in s.tagsC2s ?? []" :key="t" variant="secondary" class="text-xs">
+                    {{ t }}
+                  </Badge>
+                  <span v-if="!(s.tagsC2s ?? []).length" class="text-xs text-muted-foreground">
+                    Todos os leads
+                  </span>
+                </template>
+                <span v-else class="text-xs text-muted-foreground">
+                  —
                 </span>
               </div>
             </TableCell>

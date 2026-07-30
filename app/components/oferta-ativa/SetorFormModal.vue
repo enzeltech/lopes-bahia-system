@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import type { SetorFormPayload } from '@/composables/useSetoresAdmin'
-import type { Corretor, Setor } from '@/types/oferta-ativa'
+import type { Corretor, OrigemLeads, Setor } from '@/types/oferta-ativa'
 
 const props = defineProps<{
   open: boolean
@@ -30,6 +30,12 @@ const emit = defineEmits<{
 const isEditing = computed(() => !!props.setor)
 const submitError = ref<string | null>(null)
 
+const ORIGENS: Array<{ valor: OrigemLeads, titulo: string, descricao: string }> = [
+  { valor: 'c2s', titulo: 'C2S', descricao: 'Fila da Contact2Sale, por tag' },
+  { valor: 'mailing', titulo: 'Mailing', descricao: 'Só lista importada (CSV)' },
+  { valor: 'ambos', titulo: 'Ambos', descricao: 'C2S primeiro, depois o mailing' },
+]
+
 const openModel = computed({
   get: () => props.open,
   set: (v: boolean) => emit('update:open', v),
@@ -38,6 +44,7 @@ const openModel = computed({
 const nome = ref('')
 const descricao = ref('')
 const cor = ref('#eb194b')
+const origemLeads = ref<OrigemLeads>('c2s')
 const tagsSelecionadas = ref<string[]>([])
 const corretoresSelecionados = ref<string[]>([])
 const tagManual = ref('')
@@ -52,6 +59,7 @@ watch(
     nome.value = s?.nome ?? ''
     descricao.value = s?.descricao ?? ''
     cor.value = s?.cor ?? '#eb194b'
+    origemLeads.value = s?.origemLeads ?? 'c2s'
     tagsSelecionadas.value = [...(s?.tagsC2s ?? [])]
     corretoresSelecionados.value = [...(s?.corretores ?? [])]
     tagManual.value = ''
@@ -97,7 +105,9 @@ function onSubmit() {
     nome: nome.value.trim(),
     descricao: descricao.value.trim(),
     cor: cor.value,
-    tagsC2s: [...tagsSelecionadas.value],
+    origemLeads: origemLeads.value,
+    // Setor que só trabalha mailing não usa tag da C2S para nada.
+    tagsC2s: origemLeads.value === 'mailing' ? [] : [...tagsSelecionadas.value],
     empreendimentos: props.setor?.empreendimentos ?? [],
     corretores: [...corretoresSelecionados.value],
   }, props.setor?.id ?? null)
@@ -139,6 +149,37 @@ defineExpose({ setError })
         </div>
 
         <div class="space-y-2">
+          <Label>Origem dos leads</Label>
+          <div class="grid gap-2 sm:grid-cols-3">
+            <button
+              v-for="opcao in ORIGENS"
+              :key="opcao.valor"
+              type="button"
+              :class="cn(
+                'rounded-lg border px-3 py-2 text-left transition-colors',
+                origemLeads === opcao.valor
+                  ? 'border-brand bg-brand/5 ring-1 ring-brand/30'
+                  : 'border-border bg-background hover:border-brand/40',
+              )"
+              @click="origemLeads = opcao.valor"
+            >
+              <span class="block text-xs font-semibold text-foreground">{{ opcao.titulo }}</span>
+              <span class="mt-0.5 block text-[11px] leading-tight text-muted-foreground">
+                {{ opcao.descricao }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="origemLeads !== 'c2s'" class="rounded-lg border border-border bg-muted/40 px-3 py-2.5">
+          <p class="text-xs text-muted-foreground">
+            Depois de salvar, importe a planilha em
+            <span class="font-medium text-foreground">Oferta Ativa → Mailing</span>
+            para abastecer este setor.
+          </p>
+        </div>
+
+        <div v-if="origemLeads !== 'mailing'" class="space-y-2">
           <Label>Tags da C2S (match dos leads)</Label>
           <p class="text-xs text-muted-foreground">
             Leads com pelo menos uma dessas tags entram no setor. Sem tags, o setor recebe todos os leads.

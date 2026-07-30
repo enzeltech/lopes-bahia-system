@@ -8,6 +8,7 @@ import {
   Link2,
   MessageSquareText,
   Settings,
+  Upload,
 } from 'lucide-vue-next'
 import { NuxtLink } from '#components'
 import { cn } from '@/lib/utils'
@@ -17,6 +18,7 @@ interface NavItem {
   to: string
   icon: Component
   superAdminOnly?: boolean
+  gerenteOnly?: boolean
 }
 
 interface ExternalNavItem {
@@ -34,13 +36,14 @@ const emit = defineEmits<{
   (e: 'navigate'): void
 }>()
 
-const { isSuperAdmin } = useAuthUser()
+const { isSuperAdmin, isGerente } = useAuthUser()
 const route = useRoute()
 
 const items: NavItem[] = [
   { label: 'Início', to: '/dashboard', icon: Home },
   { label: 'Empreendimentos', to: '/dashboard/empreendimentos', icon: Building2 },
   { label: 'Oferta ativa', to: '/dashboard/oferta-ativa', icon: MessageSquareText },
+  { label: 'Mailing', to: '/dashboard/mailing', icon: Upload, gerenteOnly: true },
   { label: 'Links Úteis', to: '/dashboard/links-uteis', icon: Link2 },
   { label: 'Capacitação', to: '/dashboard/capacitacao', icon: Book },
   { label: 'Configurações', to: '/dashboard/configuracao', icon: Settings, superAdminOnly: true },
@@ -52,7 +55,10 @@ const externalItems: ExternalNavItem[] = [
 ]
 
 const visibleItems = computed(() =>
-  items.filter(item => !item.superAdminOnly || isSuperAdmin.value),
+  items.filter(item =>
+    (!item.superAdminOnly || isSuperAdmin.value)
+    && (!item.gerenteOnly || isGerente.value),
+  ),
 )
 
 function isActive(to: string): boolean {

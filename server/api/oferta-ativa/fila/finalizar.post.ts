@@ -43,13 +43,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Atendimento não encontrado.' })
 
   // Reflete na C2S (best-effort) — tira o lead da fila lá também.
-  try {
-    await markAsInteracted(event, atendimento.c2sLeadId, {
-      status,
-      feedback: observacao ?? '',
-    })
-  } catch (e) {
-    console.error('[oferta-ativa] mark_as_interacted falhou:', e)
+  // Lead de mailing não existe na C2S: chamar a API devolveria 404 à toa.
+  if (atendimento.origem === 'c2s') {
+    try {
+      await markAsInteracted(event, atendimento.c2sLeadId, {
+        status,
+        feedback: observacao ?? '',
+      })
+    } catch (e) {
+      console.error('[oferta-ativa] mark_as_interacted falhou:', e)
+    }
   }
 
   return { ok: true }

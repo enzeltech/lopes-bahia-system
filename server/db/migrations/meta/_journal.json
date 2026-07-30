@@ -50,6 +50,13 @@
       "when": 1780351529397,
       "tag": "0006_left_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785438729496,
+      "tag": "0007_youthful_sugar_man",
+      "breakpoints": true
     }
   ]
 }
