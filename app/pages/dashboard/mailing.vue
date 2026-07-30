@@ -5,6 +5,7 @@ import { FileSpreadsheet, Trash2, Upload } from 'lucide-vue-next'
 import {
   COLUNAS_MAILING,
   formatarTelefone,
+  normalizarTelefone,
   pareceCabecalho,
   parseCsv,
   sugerirMapeamento,
@@ -92,8 +93,45 @@ const linhasMapeadas = computed<LinhaMailing[]>(() => {
   }))
 })
 
-const validas = computed(() => linhasMapeadas.value.filter(l => telefoneValido(l.telefone)))
-const invalidas = computed(() => linhasMapeadas.value.length - validas.value.length)
+const invalidas = computed(() =>
+  linhasMapeadas.value.filter(l => !telefoneValido(l.telefone)).length,
+)
+
+/**
+ * Repetições dentro do próprio arquivo, que o navegador consegue detectar —
+ * assim o contador promete o mesmo número que o servidor vai gravar. O que
+ * não dá para saber aqui é o que já existe no banco (já no setor ou já
+ * trabalhado); isso só o import responde.
+ */
+const duplicadas = computed(() => {
+  const vistos = new Set<string>()
+  let n = 0
+  for (const linha of linhasMapeadas.value) {
+    if (!telefoneValido(linha.telefone))
+      continue
+    const tel = normalizarTelefone(linha.telefone)
+    if (vistos.has(tel))
+      n++
+    else
+      vistos.add(tel)
+  }
+  return n
+})
+
+/** O que de fato será enviado: telefone válido e sem repetir no arquivo. */
+const validas = computed(() => {
+  const vistos = new Set<string>()
+  return linhasMapeadas.value.filter((linha) => {
+    if (!telefoneValido(linha.telefone))
+      return false
+    const tel = normalizarTelefone(linha.telefone)
+    if (vistos.has(tel))
+      return false
+    vistos.add(tel)
+    return true
+  })
+})
+
 const preview = computed(() => linhasMapeadas.value.slice(0, 5))
 
 const podeImportar = computed(() =>
@@ -339,6 +377,9 @@ function formatarData(iso: string): string {
               <span class="font-medium text-foreground">{{ validas.length }}</span> prontas para importar
               <template v-if="invalidas">
                 · <span class="text-rose-600">{{ invalidas }} com telefone inválido</span>
+              </template>
+              <template v-if="duplicadas">
+                · <span class="text-amber-600">{{ duplicadas }} repetidas no arquivo</span>
               </template>
             </p>
             <Button :disabled="!podeImportar" @click="onImportar">
